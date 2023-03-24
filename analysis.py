@@ -103,51 +103,91 @@ print(raw_channels)
 lh5.ls(raw_files[0],'ch016/raw/')
 
 # %%
-print("In RAW: \n ")
-show_raw = lh5.show(raw_files[0],"ch000")
+# print("In RAW: \n ")
+# show_raw = lh5.show(raw_files[0],"ch000")
 # # choosing to show only the contents for ch000
 # show_raw = lh5.show(raw_files[0])
 # print("In DSP: \n ")
 # show_dsp = lh5.show(dsp_files[0],"ch000")
-print("In HIT: \n ")
-show_hit = lh5.show(hit_files[0])
+# print("In HIT: \n ")
+# show_hit = lh5.show(hit_files[0])
 # print(" In TCM: \n ")
 # show_tcm = lh5.show(tcm_files[0])
 
 # %%
+hit_channels = lh5.ls(hit_files[0])
+# hit_channels
+
+# %%
+ge_channels_hit = hit_channels[:25]
+sipm_channels_hit = hit_channels[25:]
+# sipm_channels_hit
+
+# %%
+## Kernel dies when runnig this block, need to fix it.
+
 # hit_channels = lh5.ls(hit_files[0])
+# ge_channels_hit = hit_channels[:25]
+# sipm_channels_hit = hit_channels[25:]
+
 # energy = np.array([])
 # aoe = np.array([])
 # aoe_pass = np.array([], dtype=bool)
-# for channel in hit_channels:
-#     try:
-#         hit_data = lh5.load_nda(hit_files, 
+# energy_in_pe = np.array([])
+# qual_cut = np.array([], dtype=bool)
+# trig_pos = np.array([])
+# for channel in ge_channels_hit:
+#     ge_hit_data = lh5.load_nda(hit_files, 
 #                         ["cuspEmax_ctc_cal", "AoE_Double_Sided_Cut", "AoE_Classifier"], f'{channel}/hit')
-#         pulser_events = hit_data["AoE_Classifier"]>10
-#         energy=np.append(energy, hit_data["cuspEmax_ctc_cal"])#[~pulser_events]
-#         aoe_pass=np.append(aoe_pass, hit_data["AoE_Double_Sided_Cut"])
-#         aoe=np.append(aoe, hit_data["AoE_Classifier"])
-#         print(f"channel {channel} loaded")
-#     except:
-#         print(f" **** channel {channel} exclued")
+#     pulser_events = ge_hit_data["AoE_Classifier"]>10
+#     energy=np.append(energy, ge_hit_data["cuspEmax_ctc_cal"])#[~pulser_events]
+#     aoe_pass=np.append(aoe_pass, ge_hit_data["AoE_Double_Sided_Cut"])
+#     aoe=np.append(aoe, ge_hit_data["AoE_Classifier"])
+#     print(f"Ge channel: {channel} loaded")
+# for channel in sipm_channels_hit:
+#     sipm_hit_data = lh5.load_nda(hit_files, 
+#                         ['energy_in_pe','quality_cut','trigger_pos'], f'{channel}/hit')
+#     energy_in_pe=np.append(energy_in_pe, sipm_hit_data["energy_in_pe"])
+#     qual_cut=np.append(qual_cut, sipm_hit_data["quality_cut"])
+#     trig_pos=np.append(trig_pos, sipm_hit_data["trigger_pos"])
+#     print(f" SiPM channel: {channel} loaded")
+
 
 # %%
-# fig,ax = plt.subplots()
-# bins = np.linspace(0,3000,3000)
-# counts, edges, _ = ax.hist(energy, bins=bins, histtype='step', label='After quality cuts')
-# counts_pass, edges_pass, _ = ax.hist(energy[aoe_pass], bins=bins, histtype='step', label="After quality cuts and pulse shape discrimination cut")
-# ax.set_yscale('log')
-# plt.xlabel("Energy (keV)")
-# plt.ylabel("Counts / keV")
-# plt.legend()
-# plt.xlim(1400,1800)
-# # Count the number of events in the 1460 keV region
-# region_counts = np.sum((energy >= 1455) & (energy <= 1465))
-# region_counts_pass = np.sum((energy[aoe_pass] >= 1455) & (energy[aoe_pass] <= 1465))
-# print(f"Number of events in the 1460 +- 5 keV region: {region_counts}")
-# print(f"Number of events passing the pulse shape discrimination cut in the 1460 +- 5 keV region: {region_counts_pass}")
+hit_channels = lh5.ls(hit_files[0])
+ge_channels_hit = hit_channels[:25]
+sipm_channels_hit = hit_channels[25:]
 
-# plt.show()
+energy = np.array([])
+aoe = np.array([])
+aoe_pass = np.array([], dtype=bool)
+
+for channel in ge_channels_hit:
+    ge_hit_data = lh5.load_nda(hit_files, 
+                        ["cuspEmax_ctc_cal", "AoE_Double_Sided_Cut", "AoE_Classifier"], f'{channel}/hit')
+    pulser_events = ge_hit_data["AoE_Classifier"]>10
+    energy=np.append(energy, ge_hit_data["cuspEmax_ctc_cal"])#[~pulser_events]
+    aoe_pass=np.append(aoe_pass, ge_hit_data["AoE_Double_Sided_Cut"])
+    aoe=np.append(aoe, ge_hit_data["AoE_Classifier"])
+    print(f"Ge channel: {channel} loaded")
+
+# %%
+fig,ax = plt.subplots()
+bins = np.linspace(0,3000,3000)
+counts, edges, _ = ax.hist(energy, bins=bins, histtype='step', label='After quality cuts')
+counts_pass, edges_pass, _ = ax.hist(energy[aoe_pass], bins=bins, histtype='step', label="After quality cuts and PSD cut")
+ax.set_yscale('log')
+plt.xlabel("Energy (keV)")
+plt.ylabel("Counts / keV")
+plt.legend()
+plt.xlim(1400,1800)
+# Count the number of events in the 1460 keV region
+region_counts = np.sum((energy >= 1455) & (energy <= 1465))
+region_counts_pass = np.sum((energy[aoe_pass] >= 1455) & (energy[aoe_pass] <= 1465))
+print(f"Number of events in the 1460 +- 5 keV region: {region_counts}")
+print(f"Number of events passing the PSD cut in the 1460 +- 5 keV region: {region_counts_pass}")
+
+plt.show()
 
 
 # %%
@@ -218,31 +258,27 @@ print('Parameters in dsp file are : ',dsp_params,'\n')
 print('Parameters in hit file are : ',hit_params,'\n')
 print('Parameters in tcm file are : ',tcm_params,'\n')
 
-# %%
-my_params = ['baseline','card','ch_orca','channel','crate','timestamp','daqenergy']
-info_dict = {}
-for iCh in hit_phy_channel:
-    values = lh5.load_nda(raw_files[0],my_params,f'{iCh}/raw/')
-    info_dict[iCh]=values 
 
 # %%
-my_raw_params = ['fcid','card','ch_orca','channel','crate']
-raw_info_dict = {}
-for iCh in hit_phy_channel:
-    raw_values = lh5.load_nda(raw_files[0],my_raw_params,f'{iCh}/raw/')
-    raw_info_dict[iCh]=raw_values 
-
-# %%
-# raw_info_dict
-
-# %%
-# raw_info_table=pd.DataFrame.from_dict({(i,j):raw_info_dict[i][j][0] for i in info_dict.keys() for j in raw_info_dict[i].keys()}, orient='index')
-# print(raw_info_table.to_string())
-
-# %%
-raw_info_table=pd.DataFrame.from_dict({k:[v['card'][0],v['fcid'][0],v['channel'][0],v['crate'][0]] for k,v in raw_info_dict.items()}, 
+def dump_channel_info(raw_file):
+    my_params = ['fcid','card','ch_orca','channel','crate']
+    raw_info_dict = {}
+    raw_channels = lh5.ls(raw_file)
+    for iCh in raw_channels:
+        raw_values = lh5.load_nda(raw_file, my_params, f'{iCh}/raw/')
+        raw_info_dict[iCh]=raw_values 
+    raw_info_table=pd.DataFrame.from_dict({k:[v['card'][0],v['fcid'][0],v['channel'][0],v['crate'][0]] for k,v in raw_info_dict.items()}, 
                                       orient='index',columns=['card','fcid','channel','crate'])
-print(raw_info_table.to_string())
+    print(raw_info_table.to_string())
+    
+# raw_file = "/data1/shared/l60/l60-prodven-v1/prod-ref/v06.00/generated/tier/raw/phy/p01/r027\
+# /l60-p01-r027-phy-20220923T235251Z-tier_raw.lh5"
+# dump_channel_info(raw_file)
+    
+
+
+# %%
+my_params = ['fcid','card','ch_orca','channel','crate','baseline','daqenergy','timestamp']
 
 # %%
 values = lh5.load_nda(raw_files[10],my_params,'ch087/raw/')
@@ -302,7 +338,7 @@ for i in range(3080):
     pe = sipm_attr[0]['energy_in_pe'].nda[i][0]
     if pe>30:
         print(i, pe)
-    
+
 
 # %%
 wfs
@@ -314,41 +350,140 @@ for i in maxwf:
     plt.legend()
 plt.show()
 
+# %% [markdown]
+# ## Checking on Channel 087 only
+
 # %%
-sipm_data = lh5.load_nda(hit_files[0],['energy_in_pe','trigger_pos','timestamp','quality_cut'],'ch087/hit')
+sipm_hit_data = lh5.load_nda(hit_files,['energy_in_pe','trigger_pos','timestamp','quality_cut'],'ch087/hit')
+
+# %% [markdown]
+# ### PE histogram
+
+# %%
 fig,ax = plt.subplots(figsize=(12,7))
-bins = np.linspace(0,20,20)
-npe = sipm_data["energy_in_pe"]
-npe_withou_nan = npe[~np.isnan(npe)]
-ax.hist(npe_withou_nan, bins=bins, histtype='step', label='number of PE')
+bins = np.linspace(0,500,500)
+npe = sipm_hit_data["energy_in_pe"]
+npe_without_nan = npe[~np.isnan(npe)]
+ax.hist(npe_without_nan, bins=bins, histtype='step', label='number of PE')
+ax.set_xlabel("Number of photo electrons")
 ax.legend()
 ax.set_yscale("log")
-ax.set_xticks(np.arange(0,21))
+# ax.set_xticks(np.arange(0,21))
+ax.grid()
+plt.show()
+
+# %% [markdown]
+# ### Checking trigger postion
+
+# %%
+fig,ax = plt.subplots(figsize=(12,7))
+bins = np.linspace(0,10000,10000)
+trig = sipm_hit_data["trigger_pos"]
+trig_without_nan = trig[~np.isnan(trig)]
+ax.hist(trig_without_nan, bins=bins, histtype='step', label='trigger position')
+ax.legend()
+ax.set_yscale("log")
+# ax.set_xticks(np.arange(0,21))
 ax.grid()
 plt.show()
 
 # %%
-npe
+fig,ax = plt.subplots(figsize=(12,7))
+bins = np.linspace(0,10000,10000)
+trig = sipm_hit_data["trigger_pos"]
+trig_without_nan = trig[~np.isnan(trig)]
+ax.hist(trig_without_nan, bins=bins, histtype='step', label='trigger position')
+ax.set_xlim(2500,4000)
+ax.legend()
+ax.set_yscale("log")
+# ax.set_xticks(np.arange(0,21))
+ax.grid()
+plt.show()
 
 # %%
-plt.hist(npe[3077])
+trig_mask = (trig_withou_nan>2900) &(trig_withou_nan<3200)
 
 # %%
-sipm_attr[0]["timestamp"]
+plt.hist(trig_withou_nan[trig_mask])
 
 # %%
-sipm_attr[0]["trigger_pos"]
-
-# %%
-trig_pos = sipm_data["trigger_pos"]
+# trig_pos = sipm_data["trigger_pos"]
 # trig_pos = trig_pos[~np.isnan(trig_pos)]
-trig_pos.shape
+# trig_pos.shape
+
+# %% [markdown]
+# ### Read DSP files and extract energy using the trigger postion
 
 # %%
-plt.hist(trig_pos)
+lh5.show(dsp_files[0],'ch087/dsp')
 
 # %%
-for i in range(3080):
-    plt.plot(sipm_attr[0]["trigger_pos"].nda[i])
+sipm_dsp_data = lh5.load_nda(dsp_files,['energies','timestamp','trigger_pos'],'ch087/dsp')
 
 # %%
+fig,ax = plt.subplots(figsize=(12,7))
+bins = np.linspace(0,200,200)
+ax.hist(sipm_dsp_data["energies"][~np.isnan(sipm_dsp_data["energies"])], bins=bins, histtype='step',label='energy')
+ax.set_xlabel("")
+ax.legend()
+ax.set_yscale("log")
+# ax.set_xticks(np.arange(0,21))
+ax.grid()
+plt.show()
+
+# %%
+fig,ax = plt.subplots(figsize=(12,7))
+bins = np.linspace(0,9000,9000)
+ax.hist(sipm_dsp_data["trigger_pos"][~np.isnan(sipm_dsp_data["trigger_pos"])], bins=bins, histtype='step',label='trigger position')
+ax.set_xlabel("")
+ax.legend()
+ax.set_yscale("log")
+# ax.set_xticks(np.arange(0,21))
+ax.grid()
+plt.show()
+
+# %%
+trig_withou_nan = sipm_dsp_data["trigger_pos"][~np.isnan(sipm_dsp_data["trigger_pos"])]
+trig_mask = (trig_withou_nan>2900) &(trig_withou_nan<3200)
+trig_mask
+
+# %%
+print("Total: ", len(sipm_dsp_data["trigger_pos"]))
+print("after trigger position cut:", len(trig_mask))
+
+# %%
+fig,ax = plt.subplots(figsize=(12,7))
+bins = np.linspace(0,500,500)
+energies = sipm_dsp_data["energies"][~np.isnan(sipm_dsp_data["energies"])]
+trigger_pos = sipm_dsp_data["trigger_pos"][~np.isnan(sipm_dsp_data["trigger_pos"])]
+trig_mask = (trigger_pos>2900) &(trigger_pos<3200)
+
+ax.hist(energies, bins=bins, histtype='step',label='energy')
+ax.hist(energies[trig_mask], bins=bins, histtype='step',label='after trig. pos. cut')
+ax.set_ylabel("Counts")
+ax.legend()
+ax.set_yscale("log")
+ax.grid()
+plt.show()
+
+# %% [markdown]
+# ### For all SiPM channels:
+
+# %%
+for channel in sipm_channels_hit:
+    sipm_dsp_data = lh5.load_nda(dsp_files,['energies','timestamp','trigger_pos'],f'{channel}/dsp')   
+
+# %%
+fig,ax = plt.subplots(figsize=(12,7))
+bins = np.linspace(0,500,500)
+energies = sipm_dsp_data["energies"][~np.isnan(sipm_dsp_data["energies"])]
+trigger_pos = sipm_dsp_data["trigger_pos"][~np.isnan(sipm_dsp_data["trigger_pos"])]
+trig_mask = (trigger_pos>2900) &(trigger_pos<3200)
+
+ax.hist(energies, bins=bins, histtype='step',label='energy')
+ax.hist(energies[trig_mask], bins=bins, histtype='step',label='after trig. pos. cut')
+ax.set_ylabel("Counts")
+ax.legend()
+ax.set_yscale("log")
+ax.grid()
+plt.show()
